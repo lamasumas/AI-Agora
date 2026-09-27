@@ -22,6 +22,21 @@ Four modules live behind one navigation bar:
 - **Cron**: a read-only mirror of a scheduled job runner, with a script list and
   viewer.
 
+## Contents
+
+- [Screenshots](#screenshots)
+- [Stack](#stack)
+- [Architecture](#architecture)
+- [Quick start](#quick-start)
+- [Configuration](#configuration)
+- [Finance data pipeline (hledger)](#finance-data-pipeline-hledger)
+- [Route map](#route-map)
+- [API overview](#api-overview)
+- [Tests and lint](#tests-and-lint)
+- [Security notes](#security-notes)
+- [Repo conventions](#repo-conventions)
+- [License](#license)
+
 ## Screenshots
 
 All four tabs, captured from the container running on the generated demo data.
@@ -259,6 +274,55 @@ the result. Nothing writes back to the journal.
 Verified against hledger 1.32.3. It is a single static binary, so installing it
 is a download, not a build.
 
+### What hledger is
+
+[hledger](https://hledger.org) is plain text double entry accounting. The books
+are one or more text files you can read, diff and version, and the `hledger`
+binary answers questions about them. There is no database and no GUI in the loop,
+which is why the whole pipeline below is a handful of shell commands rather than
+an integration.
+
+A journal is a list of transactions. Each has a date, a description and two or
+more postings, and the postings have to balance:
+
+```journal
+2026-08-25 * Grocery store
+    expenses:food:grocery          4,120 JPY
+    assets:bank:mizuho            -4,120 JPY
+
+2026-08-01 * Rent
+    expenses:rent                118,000 JPY
+    assets:bank:mizuho          -118,000 JPY
+```
+
+Account names are hierarchical and colon separated, so `expenses:food:grocery` is
+the `grocery` subaccount of `food` under `expenses`. Amounts carry a commodity,
+which is either a currency or a unit of an asset. Buying fund units records the
+units as the amount and the money paid in the same posting:
+
+```journal
+2026-08-10 BUY - MARKET - WORLD
+    assets:investments:etf:"WORLD"   12.5000 "WORLD" @@ 1,000.00 EUR
+    assets:investments:cash                   -1,000.00 EUR
+```
+
+Price directives are what let hledger express holdings in a single currency:
+
+```journal
+P 2026-08-31 "WORLD"  99.60 EUR
+P 2026-08-31 BTC   78,000.00 EUR
+```
+
+That is the part that matters here. With prices present, `-V` reports every
+holding converted to EUR, and `--market --daily --historical` reconstructs what
+the portfolio was worth on each past day. Without them those two queries return
+nothing, and the Investments section has no data at all.
+
+The queries used below: `bal` is a balance report, `is` is an income statement,
+`-V` converts to a common commodity at market value, `--cost` reports at cost
+basis, `-p "last month"` is a relative period, `-b` and `-e` are an explicit
+range (`-e` is exclusive), and `--monthly` emits one column per month.
+
 ### Journal layout
 
 `main.journal` holds the imported bank and card transactions and pulls in the
@@ -278,6 +342,21 @@ Always pass `-f`. With no `-f`, hledger silently falls back to
 `~/.hledger.journal` and every number in the dashboard is wrong or missing.
 
 ### Generating the CSVs
+
+Each finance section reads a specific set of files, and each file comes from one
+query. Extracted section by section:
+
+| Section | What it shows | Query | Writes |
+|---|---|---|---|
+| Overview | Net worth, bank and investment tiles, allocation pie, survival fund | `bal ^assets:bank`, `bal assets:investments -V`, `is -p "last month"`, `is --monthly -b <start> -e <end>` | `bank_savings.csv`, `investment_value.csv`, `last_month.csv`, `monthly_income.csv` |
+| Investments | Value per asset, units held, cost basis, balance sheet chart | `bal assets:investments -V`, `bal assets:investments`, `bal assets:investments --cost`, `bal assets:investments --market -X EUR --daily --historical` | `investment_value.csv`, `investments_amount.csv`, `investments_cost.csv`, `investments-history-daily.csv` |
+| Cashflow | Last month breakdown, monthly trend, year to date, savings rate | `is -p "last month"`, `is --monthly -b <start> -e <end>` | `last_month.csv`, `monthly_income.csv` |
+| ETF Tracker | Live quotes and price history for the watchlist | none, this section talks to the market data APIs directly | nothing, it needs no journal data |
+
+The four sections share four of the seven files, so a full refresh is one run of
+the script rather than one per section. The ETF Tracker is the exception: it is
+the only finance view that works with an empty data directory, which is why it is
+the one part of the demo that shows live numbers rather than generated ones.
 
 `scripts/csv_investments.sh` runs the seven queries and writes the files the
 backend consumes. These are the commands, if you would rather run them by hand:
@@ -367,6 +446,38 @@ and Revolut has switched between `2026/07/01` and `2026-07-01` across releases.
 The importer scripts and the rules files are not part of this repository. They
 encode account numbers, merchant mappings and cardholder names, so they stay
 private. Everything this app needs to read their output is above.
+
+## Route map
+
+The frontend has four views. The router matches in order, and the last rule is a
+catch-all, so an unknown path lands on the calendar rather than a 404. Each view
+then talks to the API group of the same name.
+
+| Path | View | Component | Endpoints it calls |
+|---|---|---|---|
+| `/`, `/calendar/*` | Calendar | `src/calendar/CalendarDashboard.jsx` | `/api/calendar/events`, `/api/calendar/events/{id}`, `/api/calendar/google/status`, `/api/calendar/google/events` |
+| `/library/*` | Library | `src/library/MentalLibrary.jsx` | `/api/notes` and its sub-resources (search, pin, toggle-task, backlinks, tags, attachments), `/api/tree`, `/api/graph`, `/api/stats/activity`, `/api/stats/summary`, `/api/export`, `/api/import`, `/api/clip`, `/api/run-code` |
+| `/finance/*` | Finance | `src/App.jsx` | `/api/finance/*`, the seven endpoints in the table above |
+| `/cron/*` | Cron | `src/cron/CronDashboard.jsx` | `/api/cron/list`, `/api/cron/scripts`, `/api/cron/scripts/{name}`, `/api/cron/{id}/trigger` |
+| anything else | Calendar | the `path="*"` rule | same as the calendar |
+
+`/api/calendar/ical/export` is the one exception: no view calls it. It is a feed
+URL you subscribe to from a phone or desktop calendar client, and it returns
+local and Google events merged into a single `VCALENDAR`.
+
+Two layers serve these paths, and the split matters when you deploy behind a
+proxy:
+
+- Anything under `/api/` is handled by FastAPI. Unmatched API paths return a JSON
+  404, not HTML.
+- Everything else is the React app. The backend resolves the requested path
+  inside the build directory, serves the file if it exists, and otherwise returns
+  `index.html` so the client router can take over. A path that resolves outside
+  the build directory is rejected with 403 instead of being served.
+
+That is also why the SPA catch-all is registered last in `backend/main.py`: any
+API route added after it would be unreachable, because the catch-all would match
+first.
 
 ## API overview
 
