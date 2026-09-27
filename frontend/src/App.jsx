@@ -307,7 +307,10 @@ function FinanceDashboard() {
               Agora <span style={{ color: theme.accent }}>Dashboard</span>
             </h1>
             <div style={{ fontSize: isMobile ? 11 : 13, color: theme.textFaint, marginTop: 4 }}>
-              {cashflow.month || "Upload your CSV files to get started"}
+              {cashflow.month
+                || (monthlyIncomeData.months.length > 0
+                  ? `Latest month: ${monthlyIncomeData.months[monthlyIncomeData.months.length - 1]}`
+                  : "No finance data loaded")}
               {lastUpdated && <span style={{ marginLeft: 12, fontSize: 10, opacity: 0.7 }}>Updated: {lastUpdated}</span>}
             </div>
           </div>

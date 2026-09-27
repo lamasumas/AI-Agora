@@ -22,6 +22,33 @@ Four modules live behind one navigation bar:
 - **Cron**: a read-only mirror of a scheduled job runner, with a script list and
   viewer.
 
+## Screenshots
+
+All four tabs, captured from the container running on the generated demo data.
+
+**Library**: full text search, tags, pinned notes, a note hierarchy and the
+wiki-link graph.
+
+![Library](docs/screenshots/library.png)
+
+**Finance**: net worth, allocation, savings rate and survival fund, computed from
+the CSV exports, with live prices on the ETF tracker tab.
+
+![Finance](docs/screenshots/finance.png)
+
+**Calendar**: month view with recurring events expanded, and the day panel.
+
+![Calendar](docs/screenshots/calendar.png)
+
+**Cron**: the synced job list with schedules, last status and next run, plus the
+script viewer.
+
+![Cron](docs/screenshots/cron.png)
+
+Regenerate them with `./docs/capture_screenshots.sh http://localhost:8080` while
+the app is running. The headline figures animate on load, so a capture taken too
+early shows them mid-count.
+
 ## Stack
 
 | Layer | Choice |
