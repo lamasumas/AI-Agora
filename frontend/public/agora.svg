@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Background circle -->
+  <circle cx="32" cy="32" r="30" fill="#080b12"/>
+  <circle cx="32" cy="32" r="29" stroke="#06b6d4" stroke-width="1" opacity="0.3"/>
+  
+  <!-- Temple/Agora columns -->
+  <!-- Pediment (triangular roof) -->
+  <path d="M12 24 L32 10 L52 24 Z" fill="#06b6d4" opacity="0.9"/>
+  <path d="M14 24 L32 12 L50 24" stroke="#06b6d4" stroke-width="1.5" fill="none"/>
+  
+  <!-- Architrave (beam under roof) -->
+  <rect x="12" y="24" width="40" height="3" fill="#06b6d4" opacity="0.7"/>
+  
+  <!-- Columns -->
+  <rect x="15" y="27" width="3.5" height="22" rx="1" fill="#06b6d4" opacity="0.85"/>
+  <rect x="22" y="27" width="3.5" height="22" rx="1" fill="#06b6d4" opacity="0.85"/>
+  <rect x="29" y="27" width="3.5" height="22" rx="1" fill="#06b6d4" opacity="0.85"/>
+  <rect x="36" y="27" width="3.5" height="22" rx="1" fill="#06b6d4" opacity="0.85"/>
+  <rect x="43" y="27" width="3.5" height="22" rx="1" fill="#06b6d4" opacity="0.85"/>
+  
+  <!-- Column capitals (tops) -->
+  <rect x="14" y="26" width="5.5" height="2" rx="0.5" fill="#06b6d4" opacity="0.9"/>
+  <rect x="21" y="26" width="5.5" height="2" rx="0.5" fill="#06b6d4" opacity="0.9"/>
+  <rect x="28" y="26" width="5.5" height="2" rx="0.5" fill="#06b6d4" opacity="0.9"/>
+  <rect x="35" y="26" width="5.5" height="2" rx="0.5" fill="#06b6d4" opacity="0.9"/>
+  <rect x="42" y="26" width="5.5" height="2" rx="0.5" fill="#06b6d4" opacity="0.9"/>
+  
+  <!-- Base/steps -->
+  <rect x="10" y="49" width="44" height="3" rx="1" fill="#06b6d4" opacity="0.6"/>
+  <rect x="8" y="52" width="48" height="3" rx="1" fill="#06b6d4" opacity="0.4"/>
+  
+  <!-- Center door/opening -->
+  <rect x="27" y="34" width="10" height="15" rx="1" fill="#080b12"/>
+  <path d="M27 34 L32 29 L37 34" fill="#080b12"/>
+</svg>

@@ -1,0 +1,27 @@
+services:
+  agora:
+    build: .
+    image: ai-agora:latest
+    container_name: ai-agora
+    restart: unless-stopped
+    ports:
+      - "${AGORA_PORT:-8080}:8000"
+    environment:
+      # Demo mode seeds an empty database with fictional content and makes the
+      # write-through endpoints read-only. Set DEMO_MODE=0 for real use.
+      DEMO_MODE: "${DEMO_MODE:-1}"
+      CORS_ORIGINS: "${CORS_ORIGINS:-http://localhost:8080}"
+      ENABLE_CODE_EXEC: "${ENABLE_CODE_EXEC:-0}"
+      GOOGLE_ICAL_URL: "${GOOGLE_ICAL_URL:-}"
+      HERMES_API_URL: "${HERMES_API_URL:-http://localhost:8080}"
+    volumes:
+      # Database, uploads and anything the app writes at runtime.
+      - agora-data:/data
+      # Read-only inputs the finance dashboard renders. Swap these for your own
+      # CSV exports (or delete the mounts) when running with DEMO_MODE=0.
+      - ./demo/finance:/data/finance:ro
+      - ./demo/cron.json:/data/cron.json:ro
+      - ./demo/scripts:/data/scripts:ro
+
+volumes:
+  agora-data:

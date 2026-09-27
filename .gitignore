@@ -1,0 +1,35 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# --- Node ---
+node_modules/
+dist/
+.vite/
+
+# --- Runtime data (private by design) ---
+data/
+*.db
+*.db-shm
+*.db-wal
+uploads/
+
+# --- Environment ---
+.env
+.env.local
+
+# --- Agent tooling state ---
+.serena/cache/
+.codegraph/
+.opencode-task.txt
+.opencode-run.log
+
+# --- OS / editors ---
+.DS_Store
+Thumbs.db
+*.swp

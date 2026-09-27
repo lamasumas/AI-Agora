@@ -1,0 +1,5 @@
+/* Dashboard-specific overrides */
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Allow animations if user hasn't requested reduced motion */
+}

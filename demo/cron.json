@@ -1,0 +1,97 @@
+{
+  "jobs": [
+    {
+      "id": "demo00000001",
+      "name": "Daily calendar summary",
+      "prompt": "List today's events with title and description, or say that the day is clear.",
+      "skills": [],
+      "skill": null,
+      "model": null,
+      "provider": null,
+      "base_url": null,
+      "script": "daily-calendar-check.py",
+      "no_agent": true,
+      "context_from": null,
+      "schedule": {
+        "kind": "cron",
+        "expr": "30 22 * * *",
+        "display": "30 22 * * *"
+      },
+      "schedule_display": "30 22 * * *",
+      "repeat": {
+        "times": null,
+        "completed": 42
+      },
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "created_at": "2026-01-05T01:18:35",
+      "last_run_at": "2026-09-27T04:00:00",
+      "last_status": "success",
+      "next_run_at": "2026-09-27T04:00:00"
+    },
+    {
+      "id": "demo00000002",
+      "name": "Weekly price snapshot",
+      "prompt": "Fetch the watchlist quotes and store them in the tracker.",
+      "skills": [],
+      "skill": null,
+      "model": null,
+      "provider": null,
+      "base_url": null,
+      "script": "weekly-snapshot.sh",
+      "no_agent": false,
+      "context_from": null,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 6 * * 1",
+        "display": "0 6 * * 1"
+      },
+      "schedule_display": "0 6 * * 1",
+      "repeat": {
+        "times": null,
+        "completed": 7
+      },
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "created_at": "2026-01-05T01:18:35",
+      "last_run_at": "2026-09-27T04:00:00",
+      "last_status": "success",
+      "next_run_at": "2026-09-27T04:00:00"
+    },
+    {
+      "id": "demo00000003",
+      "name": "Disk usage watchdog",
+      "prompt": "",
+      "skills": [],
+      "skill": null,
+      "model": null,
+      "provider": null,
+      "base_url": null,
+      "script": "disk-usage.sh",
+      "no_agent": true,
+      "context_from": null,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 */6 * * *",
+        "display": "0 */6 * * *"
+      },
+      "schedule_display": "0 */6 * * *",
+      "repeat": {
+        "times": null,
+        "completed": 118
+      },
+      "enabled": false,
+      "state": "paused",
+      "paused_at": "2026-09-27T04:00:00",
+      "paused_reason": "paused while the volume was resized",
+      "created_at": "2026-01-05T01:18:35",
+      "last_run_at": "2026-09-27T04:00:00",
+      "last_status": "silent",
+      "next_run_at": null
+    }
+  ]
+}
