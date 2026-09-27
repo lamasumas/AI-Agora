@@ -5,6 +5,9 @@ services:
     container_name: ai-agora
     restart: unless-stopped
     ports:
+      # No authentication is built in. Keep this port on a private network, or put
+      # a VPN or a Cloudflare Tunnel with an Access policy in front of it. Do not
+      # publish it on a public host.
       - "${AGORA_PORT:-8080}:8000"
     environment:
       # Demo mode seeds an empty database with fictional content and makes the

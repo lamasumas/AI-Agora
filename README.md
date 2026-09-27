@@ -13,6 +13,19 @@ Everything the UI does goes through the API first, so a person and a program can
 drive it at the same time: the same endpoints create notes and move calendar
 events, and the Cron tab is a live mirror of the jobs an agent has scheduled.
 
+> [!WARNING]
+> **Not production software, and not hardened.**
+>
+> This began as a vibe coded side project. It exists mainly to explore and
+> practise agentic coding tools and techniques, and to give my Hermes agent a
+> shared place to read and write alongside me. Security was never the point, so
+> there is no authentication, no rate limiting, and several endpoints assume a
+> trusted caller.
+>
+> Run it on a private network only: a VPN such as Tailscale or WireGuard, or a
+> Cloudflare Tunnel with an Access policy in front of it. **Never expose this
+> directly to the open internet.**
+
 Four modules live behind one navigation bar:
 
 - **Library**: markdown notes with full text search, tags, folders, a note
@@ -534,11 +547,18 @@ parsing bug described above.
 
 ## Security notes
 
-Read this before exposing the app to a network you do not control.
+Read this before putting the app anywhere a stranger can reach it. The warning at
+the top of this file is the short version: this is a personal tool with no
+authentication layer, and the intended deployment is a VPN or a Cloudflare Tunnel
+with an Access policy, never a public port.
 
 - **There is no authentication.** It is designed for a private network
   (Tailscale, LAN, a reverse proxy that terminates TLS and enforces auth). This
   is a deliberate trade-off for a single-user tool, not an oversight.
+- **Not everything is defended.** The list below covers the holes that were
+  closed, mostly because an agent or a bank statement was on the other end of
+  them. It is not a claim that the rest is safe. Assume anything not listed is
+  exposed to whoever can reach the port.
 - **Code execution is off by default.** `POST /api/run-code` shells out to
   `python3 -c` and `node -e`. It needs `ENABLE_CODE_EXEC=1`, and even then it
   only accepts requests whose client address is loopback. Do not enable it on a
