@@ -136,6 +136,11 @@ demo/
   generate_demo_data.py  rebuilds the CSV and cron fixtures
   finance/               generated CSV exports
   scripts/               example cron scripts
+scripts/
+  csv_investments.sh     the hledger queries that produce the finance CSVs
+docs/
+  capture_screenshots.sh  regenerates the screenshots
+  screenshots/            the images used above
 ```
 
 ## Quick start
@@ -244,6 +249,124 @@ is deterministic and shifts every date so the data always looks current.
 A cell can hold two currencies (`127.00 EUR, 6864 JPY`). Both amounts are kept,
 one entry per currency, because the parser splits the cell instead of running
 the string through `parseFloat` and silently dropping half of it.
+
+## Finance data pipeline (hledger)
+
+The finance tab is a read-only view of an [hledger](https://hledger.org) journal.
+The books live in plain text, hledger does the accounting, and this app renders
+the result. Nothing writes back to the journal.
+
+Verified against hledger 1.32.3. It is a single static binary, so installing it
+is a download, not a build.
+
+### Journal layout
+
+`main.journal` holds the imported bank and card transactions and pulls in the
+hand-written entries:
+
+```journal
+include manual/crypto.journal
+include manual/extra.journal
+include manual/prices.journal
+```
+
+`manual/prices.journal` records the `P` price directives, which is what turns
+`-V` and `--market` into EUR values. Without prices the valuation and the daily
+history come back empty.
+
+Always pass `-f`. With no `-f`, hledger silently falls back to
+`~/.hledger.journal` and every number in the dashboard is wrong or missing.
+
+### Generating the CSVs
+
+`scripts/csv_investments.sh` runs the seven queries and writes the files the
+backend consumes. These are the commands, if you would rather run them by hand:
+(The script derives the monthly range from today's date, `-b` 11 months back and
+`-e` the current month; the example below spells out one such pair.)
+
+```bash
+export LANG=C.utf8     # Japanese merchant names appear in the income statement
+
+# Units held per asset, then the same holdings valued in EUR, then cost basis
+hledger -f main.journal bal assets:investments --output-format csv              > investments_amount.csv
+hledger -f main.journal bal assets:investments -V --output-format csv           > investment_value.csv
+hledger -f main.journal bal assets:investments --cost --output-format csv       > investments_cost.csv
+
+# Bank balances, all currencies
+hledger -f main.journal bal ^assets:bank --output-format csv                    > bank_savings.csv
+
+# Last month's income statement for the overview tiles
+hledger -f main.journal is -p "last month" --output-format csv                  > last_month.csv
+
+# Multi-month statement behind the cashflow trend, YTD and savings rate
+hledger -f main.journal is --monthly -b 2025-09 -e 2026-09 --output-format csv  > monthly_income.csv
+
+# Daily portfolio value in EUR, one column per day
+hledger -f main.journal bal assets:investments --market -X EUR --daily --historical \
+  --output-format csv                                                           > investments-history-daily.csv
+```
+
+Point the script at this app's data directory:
+
+```bash
+cd /path/to/finance                       # the directory holding main.journal
+OUT=/path/to/ai_agora/data/finance ./scripts/csv_investments.sh
+```
+
+With `DEMO_MODE=0` and a bind mount, that is the whole refresh cycle: run the
+queries, reload the page. The app caches nothing server side.
+
+### What each file feeds
+
+| CSV | Endpoint | Shown as |
+|---|---|---|
+| `bank_savings.csv` | `/api/finance/bank-savings` | Bank savings tile and the allocation split |
+| `investment_value.csv` | `/api/finance/investment-value` | Investments tile, allocation, per-asset values |
+| `investments_amount.csv` | `/api/finance/investment-amounts` | Units held per asset |
+| `investments_cost.csv` | `/api/finance/investment-costs` | Cost basis, unrealised gain |
+| `investments-history-daily.csv` | `/api/finance/investment-history` | Balance sheet chart |
+| `last_month.csv` | `/api/finance/cashflow/latest` | Income and expense breakdown for the last month |
+| `monthly_income.csv` | `/api/finance/cashflow/monthly` | Cashflow trend, YTD figures, savings rate, survival fund |
+
+All seven have to exist and be non-empty. The dashboard checks them as a set, so
+one empty export leaves the page on its loading state rather than rendering a
+partial view.
+
+### Account naming is part of the contract
+
+The frontend strips these prefixes for display, so the journal has to use them:
+
+- `assets:bank:<name>` for cash
+- `assets:investments:<name>`, `assets:investments:etf:<ticker>` and
+  `assets:investments:crypto:<ticker>` for holdings
+- `expenses:<category>:<subcategory>` for spending, which is what the allocation
+  pie groups on. A new top-level category needs a colour in
+  `frontend/src/lib/parsers.js` to look deliberate.
+- `income:<source>` for earnings
+
+Asset names containing `gold`, `xau` or `glda` are classified as gold, and
+`btc`, `eth` and the other listed tickers as crypto, with everything else treated
+as an ETF. That classification drives the 65/20/15 style allocation view.
+
+### Monthly refresh
+
+1. Export the statements from each bank into `data/`.
+2. Normalise each export to the format its rules file expects (see the bank
+   format table below).
+3. Dry run every import, then import: `hledger -f main.journal import <file> --rules-file rules/<bank>.rules`.
+4. Delete the `.latest.*` dedup caches, which hledger writes next to the CSV being
+   imported, not in the journal directory. Miss this and a re-import silently
+   skips everything.
+5. Run `scripts/csv_investments.sh`.
+
+Bank format quirks worth knowing, because they all fail silently: Mizuho exports
+are Shift-JIS with 12 metadata rows before the header, PayPay exports are UTF-8
+with a BOM and comma-formatted amounts (`"1,984"`, which hledger reads as 1.984),
+and Revolut has switched between `2026/07/01` and `2026-07-01` across releases.
+
+The importer scripts and the rules files are not part of this repository. They
+encode account numbers, merchant mappings and cardholder names, so they stay
+private. Everything this app needs to read their output is above.
 
 ## API overview
 
