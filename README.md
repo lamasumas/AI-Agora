@@ -1,12 +1,17 @@
 # Agora
 
-A self-hosted personal knowledge, calendar and finance dashboard in one app.
+> An agora was the open square at the heart of a Greek city, where public life
+> happened. This one is the centre of a personal stack: a self-hosted knowledge,
+> calendar and finance dashboard, and a place an AI agent can work alongside you.
 
 Agora is a single FastAPI service that serves a React SPA, keeps everything in
-one SQLite file, and turns a pile of exported CSV statements into a finance
-dashboard with live market data. It runs in one container, has no external
-services to babysit, and the whole database is a single file you can copy for a
-backup.
+one SQLite file, and turns exported CSV statements into a finance dashboard with
+live market data. It runs in one container, has no external services to babysit,
+and the whole database is a single file you can copy as a backup.
+
+Everything the UI does goes through the API first, so a person and a program can
+drive it at the same time: the same endpoints create notes and move calendar
+events, and the Cron tab is a live mirror of the jobs an agent has scheduled.
 
 Four modules live behind one navigation bar:
 
